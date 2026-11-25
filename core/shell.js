@@ -11,8 +11,10 @@ const TEAM_NAMES = ['The Bellhops', 'Room Service', 'Late Checkout', 'Minibar Ra
 
 export class GameShell {
   /**
-   * opts: { id, title, roomId, schema, presets, instructions[], blurbs:{easy,hard}, game }
-   * game hooks: setup(shell), begin(run), press(inputId), onTimeUp(), tick(dt), reset(),
+   * opts: { id, title, roomId, schema, presets, instructions[], blurbs:{easy,hard}, game,
+   *         modes?: [{id,label,blurb}] — when a room has several games, players pick one outside,
+   *         blurbs may then be keyed by mode: { defence:{easy,hard}, ... } }
+   * game hooks: setup(shell), begin(run), press(inputId), pick(id, hit), onTimeUp(), tick(dt), reset(),
    *             adminInfo() -> [[k,v]], adminActions() -> [{label, fn}]
    */
   constructor(opts) {
@@ -26,6 +28,7 @@ export class GameShell {
     this.state = 'idle'; this.team = null; this.difficulty = 'easy'; this.queue = []; this.lastResult = null;
     this.clock = { running: false, left: 0, total: 0 };
     this.inputs = []; this.lit = new Set();
+    this.modes = opts.modes || null; this.mode = this.modes ? null : 'default'; this.pickStep = 'diff';
     this._nameIx = 0;
   }
 
@@ -112,7 +115,8 @@ export class GameShell {
               <button id="resetroom">Reset room</button>
             </div>
           </div>
-          <div class="card"><h2>Buttons <span>click, or use keys</span></h2><div class="inputs" id="inputs"></div></div>
+          <div class="card" id="inputscard"><h2>Buttons <span>click, or use keys</span></h2><div class="inputs" id="inputs"></div></div>
+          <div id="cards"></div>
           <div id="panels"></div>
           <p class="note">${this.o.footnote || ''}</p>
         </div>
@@ -120,7 +124,7 @@ export class GameShell {
       </div>
     </div>`;
     const $ = (id) => document.getElementById(id);
-    this.dom = { view: $('view'), side: $('side'), panels: $('panels'), inputs: $('inputs'), admin: $('admin'), chip: $('diffchip'), flow: $('flowstate'), legend: $('legend') };
+    this.dom = { cards: $('cards'), inputsCard: $('inputscard'), view: $('view'), side: $('side'), panels: $('panels'), inputs: $('inputs'), admin: $('admin'), chip: $('diffchip'), flow: $('flowstate'), legend: $('legend') };
     $('views').addEventListener('click', e => {
       const v = e.target.dataset.v; if (!v) return;
       this.room.setView(v);
@@ -153,6 +157,15 @@ export class GameShell {
     return card;
   }
 
+  // A game's own side-panel card (e.g. simulated players). Returns the body element.
+  addCard(title, sub = '') {
+    const card = document.createElement('div'); card.className = 'card';
+    card.innerHTML = `<h2>${title} <span>${sub}</span></h2><div></div>`;
+    this.dom.cards.appendChild(card);
+    return card.lastElementChild;
+  }
+  modeLabel(id = this.mode) { return this.modes ? (this.modes.find(m => m.id === id) || {}).label || '' : ''; }
+
   setLegend(items) {
     this.dom.legend.innerHTML = items.map(([c, t]) => `<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${c};margin-right:6px"></i>${t}</span>`).join('');
   }
@@ -161,6 +174,7 @@ export class GameShell {
   setInputs(list) {
     this.inputs = list;
     this.dom.inputs.innerHTML = '';
+    this.dom.inputsCard.hidden = !list.length;
     for (const inp of list) {
       const b = document.createElement('button');
       b.style.color = inp.color; b.dataset.id = inp.id;
@@ -199,6 +213,7 @@ export class GameShell {
       this.redrawAll(); return;
     }
     if (this.inputs.find(i => i.id === id)) this.press(id);
+    else if (this.game.pick) { this.game.pick(id, hit); this.redrawAll(); }
   }
   // Let a game register its own clickable screens (e.g. genre pick on the main screen)
   clickableScreen(surface, id, tip) {
@@ -230,16 +245,25 @@ export class GameShell {
   tapCard() {
     this.unlockAudio();
     const name = this._nextName();
-    if (this.state === 'idle') { this.team = name; this.state = 'carded'; this.beep(1320, 0.08); }
+    if (this.state === 'idle') { this.team = name; this.state = 'carded'; this.pickStep = this.modes ? 'game' : 'diff'; this.beep(1320, 0.08); }
     else if (this.queue.length < 4) { this.queue.push(name); this.beep(990, 0.08); }
     else this.flash('Queue is full (4 teams)');
     this.redrawAll();
   }
-  chooseDifficulty(d) {
+  chooseMode(m) {
     if (this.state !== 'carded') return;
+    this.mode = m; this.pickStep = 'diff'; this.beep(1100, 0.06);
+    this.redrawAll();
+  }
+  chooseDifficulty(d, mode) {
+    if (this.state !== 'carded') return;
+    if (mode) this.mode = mode;
+    if (this.modes && !this.mode) { this.pickStep = 'game'; return; }
     this.difficulty = d; this.state = 'inroom';
-    this.clock = { running: false, left: this.settings.gameLength, total: this.settings.gameLength };
-    this.game.begin({ team: this.team, difficulty: d, settings: this.settings });
+    // each game (or each mode of a game) can have its own hard time limit
+    const len = this.game.clockLength ? this.game.clockLength(this.mode, this.settings) : this.settings.gameLength;
+    this.clock = { running: false, left: len, total: len };
+    this.game.begin({ team: this.team, difficulty: d, mode: this.mode, settings: this.settings });
     this._refreshAdmin();
     this.redrawAll();
   }
@@ -257,14 +281,15 @@ export class GameShell {
   }
   _afterResult() {
     this.team = null;
-    if (this.queue.length) { this.team = this.queue.shift(); this.state = 'carded'; }
+    if (this.modes) this.mode = null;
+    if (this.queue.length) { this.team = this.queue.shift(); this.state = 'carded'; this.pickStep = this.modes ? 'game' : 'diff'; }
     else this.state = 'idle';
     this.game.reset && this.game.reset();
     this.redrawAll();
   }
   resetRoom() {
     this.clock = { running: false, left: 0, total: 0 };
-    this.team = null; this.queue = []; this.state = 'idle';
+    this.team = null; this.queue = []; this.state = 'idle'; if (this.modes) this.mode = null;
     this.game.reset && this.game.reset();
     this.setLit([]); this.redrawAll(); this._refreshAdmin();
   }
@@ -291,9 +316,9 @@ export class GameShell {
     this._drawScore();
     this.game.draw && this.game.draw();
     const chip = this.dom.chip;
-    if (this.state === 'inroom' || this.state === 'result') { chip.textContent = this.difficulty; chip.className = 'chip ' + this.difficulty; }
+    if (this.state === 'inroom' || this.state === 'result') { chip.textContent = (this.modes ? this.modeLabel() + ' · ' : '') + this.difficulty; chip.className = 'chip ' + this.difficulty; }
     else { chip.textContent = 'No game'; chip.className = 'chip'; }
-    this.dom.flow.textContent = { idle: 'waiting for a team', carded: `${this.team}: picking difficulty`, inroom: `${this.team} in play`, result: 'showing result' }[this.state]
+    this.dom.flow.textContent = { idle: 'waiting for a team', carded: `${this.team}: picking ${this.pickStep === 'game' ? 'a game' : 'difficulty'}`, inroom: `${this.team} in play`, result: 'showing result' }[this.state]
       + (this.queue.length ? ` · ${this.queue.length} queued` : '');
   }
 
@@ -318,23 +343,40 @@ export class GameShell {
       rr(ctx, 32, 346, W - 64, 76, 14); ctx.strokeStyle = `rgba(255,181,71,${pulse})`; ctx.lineWidth = 4; ctx.stroke();
       fit(ctx, 'TAP YOUR CARD TO PLAY', W / 2, 398, W - 120, 40, { color: C.accent, align: 'center' });
       S.hit(32, 346, W - 64, 76, () => this.tapCard());
-    } else if (this.state === 'carded') {
+    } else if (this.state === 'carded' && this.pickStep === 'game') {
       fit(ctx, `Hi ${this.team}!`, 32, 128, W - 64, 40, { color: C.fg });
+      wrap(ctx, 'Pick your game.', 32, 146, W - 64, 26, { size: 20, color: C.muted });
+      const n = this.modes.length, gap = 16, bw = (W - 64 - gap * (n - 1)) / n;
+      this.modes.forEach((m, i) => {
+        const x = 32 + i * (bw + gap), y = 196, h = 220;
+        rr(ctx, x, y, bw, h, 16); ctx.fillStyle = 'rgba(111,168,220,0.10)'; ctx.fill(); ctx.strokeStyle = C.wire; ctx.lineWidth = 4; ctx.stroke();
+        fit(ctx, m.label.toUpperCase(), x + bw / 2, y + 66, bw - 30, 48, { color: C.fg, align: 'center' });
+        wrap(ctx, m.blurb || '', x + bw / 2, y + 90, bw - 36, 25, { size: 18, color: C.muted, align: 'center', maxLines: 5 });
+        S.hit(x, y, bw, h, () => this.chooseMode(m.id));
+      });
+    } else if (this.state === 'carded') {
+      const bl = (o.blurbs && this.modes ? o.blurbs[this.mode] : o.blurbs) || {};
+      fit(ctx, this.modes ? this.modeLabel() : `Hi ${this.team}!`, 32, 128, W - 260, 40, { color: C.fg });
       wrap(ctx, 'Pick your difficulty to start.', 32, 146, W - 64, 26, { size: 20, color: C.muted });
+      if (this.modes) {
+        rr(ctx, W - 212, 92, 180, 46, 10); ctx.strokeStyle = C.rule; ctx.lineWidth = 2; ctx.stroke();
+        fit(ctx, '< CHANGE GAME', W - 122, 124, 160, 22, { color: C.muted, align: 'center', weight: 600 });
+        S.hit(W - 212, 92, 180, 46, () => { this.pickStep = 'game'; });
+      }
       const bw = (W - 64 - 20) / 2;
       [['easy', C.good], ['hard', C.bad]].forEach(([d, col], i) => {
         const x = 32 + i * (bw + 20), y = 196, h = 220;
         rr(ctx, x, y, bw, h, 16); ctx.fillStyle = col + '22'; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.stroke();
         fit(ctx, d.toUpperCase(), x + bw / 2, y + 78, bw - 30, 64, { color: col, align: 'center' });
-        wrap(ctx, (o.blurbs || {})[d] || '', x + bw / 2, y + 102, bw - 36, 25, { size: 19, color: C.fg, align: 'center', maxLines: 4 });
+        wrap(ctx, bl[d] || '', x + bw / 2, y + 102, bw - 36, 25, { size: 19, color: C.fg, align: 'center', maxLines: 4 });
         S.hit(x, y, bw, h, () => this.chooseDifficulty(d));
       });
     } else if (this.state === 'inroom') {
       const cl = this.clock;
-      fit(ctx, 'GAME IN PROGRESS', 32, 130, W - 64, 34, { color: C.muted, weight: 500 });
+      fit(ctx, this.modes ? `NOW PLAYING: ${this.modeLabel().toUpperCase()}` : 'GAME IN PROGRESS', 32, 130, W - 64, 34, { color: C.muted, weight: 500 });
       fit(ctx, this.team, 32, 186, W - 300, 48, { color: C.fg });
       fit(ctx, this.difficulty.toUpperCase(), W - 32, 186, 220, 34, { color: this.difficulty === 'hard' ? C.bad : C.good, align: 'right' });
-      fit(ctx, cl.running || cl.left < cl.total ? fmtTime(cl.left) : fmtTime(this.settings.gameLength), W / 2, 318, W, 120, { color: C.accent, align: 'center' });
+      fit(ctx, fmtTime(cl.left), W / 2, 318, W, 120, { color: C.accent, align: 'center' });
       fit(ctx, cl.running ? 'LEFT TO PLAY' : 'STARTING SOON', W / 2, 352, W, 22, { color: C.muted, align: 'center', weight: 500 });
       this._drawQueue(ctx, W, H);
       S.hit(0, 0, W, H, () => this.tapCard());
@@ -369,7 +411,7 @@ export class GameShell {
       fit(ctx, 'SCORE', 30, 130, 300, 26, { color: C.muted, weight: 500 });
       fit(ctx, fmtNum(g.score || 0), 30, 290, 470, 170, { color: C.accent });
       fit(ctx, 'TIME', W - 30, 130, 200, 26, { color: C.muted, weight: 500, align: 'right' });
-      const left = this.state === 'result' ? 0 : (this.clock.running || this.clock.left < this.clock.total ? this.clock.left : this.settings.gameLength);
+      const left = this.state === 'result' ? 0 : this.clock.left;
       fit(ctx, fmtTime(left), W - 30, 220, 260, 96, { color: left < 15 && this.state === 'inroom' ? C.bad : C.fg, align: 'right' });
       if (g.sub) fit(ctx, g.sub, W - 30, 290, 260, 30, { color: C.muted, align: 'right', weight: 500 });
       if (g.footer) fit(ctx, g.footer, 30, H - 32, W - 60, 28, { color: C.wire, weight: 500 });
@@ -417,8 +459,9 @@ export class GameShell {
       const act = (list) => { const d = document.createElement('div'); d.className = 'actions'; for (const x of list) { const b = document.createElement('button'); b.textContent = x.label; b.onclick = () => { this.unlockAudio(); x.fn(); this._refreshAdmin(); this.redrawAll(); }; d.appendChild(b); } body.appendChild(d); };
       act([
         { label: 'Tap card', fn: () => this.tapCard() },
-        { label: 'Start Easy', fn: () => { if (this.state === 'idle') this.tapCard(); this.chooseDifficulty('easy'); } },
-        { label: 'Start Hard', fn: () => { if (this.state === 'idle') this.tapCard(); this.chooseDifficulty('hard'); } },
+        ...(this.modes || [{ id: null, label: '' }]).flatMap(m => ['easy', 'hard'].map(d => ({
+          label: `Start ${m.label ? m.label + ' ' : ''}${d === 'easy' ? 'Easy' : 'Hard'}`,
+          fn: () => { if (this.state === 'idle') this.tapCard(); this.chooseDifficulty(d, m.id); } }))),
         { label: this.paused ? 'Resume' : 'Pause', fn: () => { this.paused = !this.paused; this.game.onPause && this.game.onPause(this.paused); } },
         { label: '+30 s', fn: () => this.addTime(30) },
         { label: 'End game now', fn: () => { if (this.state === 'inroom') { this.clock.left = 0; this.clock.running = false; this.game.onTimeUp(); } } },
@@ -441,8 +484,11 @@ export class GameShell {
       for (const d of ['easy', 'hard']) {
         const col = document.createElement('div');
         col.innerHTML = `<h4 style="color:${d === 'easy' ? 'var(--good)' : 'var(--bad)'}">${d.toUpperCase()}</h4>`;
-        for (const f of this.o.schema.filter(f => f.preset))
+        let grp = null;
+        for (const f of this.o.schema.filter(f => f.preset)) {
+          if (f.group && f.group !== grp) { grp = f.group; col.insertAdjacentHTML('beforeend', `<h3>${grp}</h3>`); }
           col.appendChild(this._field(f, this.presetValue(d, f.key), v => { this.store.presets[d][f.key] = v; this._saveSettings(); }, f.key in this.store.presets[d]));
+        }
         cols.appendChild(col);
       }
       body.appendChild(cols);
@@ -470,7 +516,7 @@ export class GameShell {
   }
   _renderLive() {
     const el = document.getElementById('adm-live'); if (!el) return;
-    const rows = [['State', this.state + (this.paused ? ' (paused)' : '')], ['Team', this.team || '—'], ['Difficulty', this.state === 'inroom' ? this.difficulty : '—'],
+    const rows = [['State', this.state + (this.paused ? ' (paused)' : '')], ['Team', this.team || '—'], ['Difficulty', this.state === 'inroom' ? (this.modes ? this.modeLabel() + ' · ' : '') + this.difficulty : '—'],
       ['Clock', this.clock.running ? fmtTime(this.clock.left) : '—'], ['Queue', this.queue.join(', ') || '—'],
       ...(this.game.adminInfo ? this.game.adminInfo() : [])];
     el.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');

@@ -25,12 +25,13 @@ core/
   vendor/               three.js r170 + OrbitControls (MIT, vendored so nothing loads from a CDN)
 games/
   piano/                R4 music quiz (game 1)
+  lightfloor/           R8 light-up tile room: Planet Defence + Colour Call (game 2)
 ```
 
 ## What every game gets from the core
 
 - **A room at its real size.** Door, game cabinet, a 12" outside screen and a score screen above the door are drawn automatically.
-- **The outside screen flow:** tap card (team name), then pick Easy or Hard, then the game runs with the time left shown. Tapping more cards while a game runs queues those teams.
+- **The outside screen flow:** tap card (team name), then pick a game if the room has more than one, then pick Easy or Hard, then the game runs with the time left shown. Tapping more cards while a game runs queues those teams.
 - **Inputs three ways:** click the prop in 3D, click the side-panel buttons, or use keys 1–4.
 - **Admin drawer, in four tabs:**
   - **Demo:** live state plus room and game actions.
@@ -58,3 +59,12 @@ Copy `games/piano/` as a template:
 - **Rounds:** each song is a 20 s snippet with 4 answers, one per instrument. Points slide from 1,000 down to 100 over the snippet. A wrong answer scores nothing and the game moves on. The game lasts 3 minutes.
 - **Hard mode:** every song plays through a different distortion: chipmunk, slow-mo, underwater, warped tape, bit-crushed, old radio or backwards. You choose which ones are used, and how strong, in admin.
 - **Audio:** all songs are generated in the browser from made-up titles (`games/piano/songs.js`, `music.js`). There is no real music. To use real clips later, add `file: 'audio/name.mp3'` to a song. The game plays the file when it exists and falls back to the generated tune when it doesn't. Only commit clips you're licensed to use: this repo is public.
+
+## Light Floor (R8)
+
+- **Room:** the Light Floor Room Sim's rules at R8's size (3.9 × 7.0 m). It keeps the 2.07 m carpeted entry zone for the door swing and turning space, 300 mm tiles, cable gaps, power strip, skirting and conduit. That fits a 12 × 15 floor, a 12 × 8 back wall and 16 × 8 on each side wall: 532 tiles.
+- **Choosing a game:** players pick Planet Defence or Colour Call, then Easy or Hard, on the outside screen.
+- **Planet Defence:** stamp on missiles before they reach the planet. One hit ends the game. Surviving to the time limit (default 3:00) wins. Hard uses the original sim's tuning.
+- **Colour Call:** get onto the called colour before the 3-2-1 count ends. Running out of lives ends the game early, and the time limit (default 3:00) is a hard stop. Pick a simulated player in the Players card, then click a tile to put them there.
+- **Time limits** are set per game in admin. Any game can set its own limit with a `clockLength(mode, settings)` hook.
+- **Clicking tiles when no team is playing** sends ripples across the room.

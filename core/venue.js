@@ -32,7 +32,7 @@ export const ALLOCATION = [
   { room: 'R5',  game: 'Submarine',        type: 'P', path: null },
   { room: 'R6',  game: 'Restaurant',       type: 'T', path: null },
   { room: 'R7',  game: 'Ball Pit (TBC)',   type: 'P', path: null },
-  { room: 'R8',  game: 'Light Floor',      type: 'P', path: null },
+  { room: 'R8',  game: 'Light Floor',      type: 'P', path: 'games/lightfloor/index.html' },
   { room: 'R9',  game: 'Claw Quiz',        type: 'T', path: null },
   { room: 'R10', game: 'Escape Room',      type: 'T', path: null },
   { room: 'ELEV',game: 'Elevator',         type: '',  path: null },
