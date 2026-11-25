@@ -1,0 +1,114 @@
+/* Hijinx CityWalk game sim — shared styles.
+   Dark "blueprint" look, matching the Light Floor Room Sim. */
+:root{
+  --bg:#0a1220; --panel:#0e1829; --panel2:#101d31; --rule:#1f3049; --fg:#d9e4f2; --muted:#8094ae;
+  --wire:#6fa8dc; --accent:#ffb547; --good:#5fd38d; --bad:#ff6b62;
+  --display:'Saira Condensed','Arial Narrow',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:13px;line-height:1.45}
+button{font:inherit;color:var(--fg);background:transparent;border:1px solid var(--rule);border-radius:3px;cursor:pointer;padding:6px 10px}
+button:hover:not(:disabled){border-color:var(--wire);color:#fff}
+button:disabled{opacity:.35;cursor:default}
+button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+input:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+a{color:var(--wire)}
+
+/* ---------- app frame ---------- */
+.app{display:grid;grid-template-rows:auto minmax(0,1fr);height:100%}
+.topbar{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--rule);background:var(--panel);flex-wrap:wrap}
+.topbar h1{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.03em;line-height:1;margin:0}
+.topbar h1 small{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-left:10px}
+.topbar .spacer{flex:1}
+.topbar .grp{display:flex;gap:0}
+.topbar .grp button{border-radius:0;margin-left:-1px;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.topbar .grp button:first-child{border-radius:3px 0 0 3px;margin-left:0}
+.topbar .grp button:last-child{border-radius:0 3px 3px 0}
+.topbar .grp button[aria-pressed=true]{position:relative;z-index:1}
+.chip{font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--rule);border-radius:99px;padding:3px 10px;color:var(--muted)}
+.chip.hard{border-color:var(--bad);color:var(--bad)} .chip.easy{border-color:var(--good);color:var(--good)}
+.btn-admin{border-color:var(--accent);color:var(--accent);text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+.home{color:var(--muted);text-decoration:none;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.home:hover{color:#fff}
+
+.main{display:grid;grid-template-columns:minmax(0,1fr) 400px;min-height:0;position:relative}
+.view{position:relative;min-width:0;min-height:0;overflow:hidden}
+.view canvas{display:block;width:100%;height:100%;touch-action:none}
+.view .hint{position:absolute;left:14px;bottom:12px;font-size:11px;color:var(--muted);pointer-events:none}
+.view .legend{position:absolute;left:14px;top:12px;font-size:11px;color:var(--muted);pointer-events:none;display:flex;flex-direction:column;gap:3px}
+.view .tip{position:absolute;pointer-events:none;background:rgba(10,18,32,.92);border:1px solid var(--rule);padding:3px 7px;border-radius:3px;font-size:11px;white-space:nowrap;display:none}
+
+.side{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px}
+.card h2{font-family:var(--display);font-weight:500;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 6px;display:flex;justify-content:space-between;align-items:baseline}
+.card h2 span{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:none}
+.screen{display:block;width:100%;height:auto;border:1px solid var(--rule);border-radius:4px;background:#000;cursor:default;image-rendering:auto}
+.screen.clickable{cursor:pointer}
+.screen.small{width:85%}
+.inputs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.inputs button{padding:10px 8px;font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:8px;justify-content:flex-start}
+.inputs button i{width:14px;height:14px;border-radius:50%;flex:none;border:2px solid currentColor}
+.inputs button kbd{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--rule);border-radius:3px;padding:0 5px}
+.inputs button.lit{box-shadow:0 0 0 1px currentColor inset, 0 0 14px -4px currentColor}
+.flowbtns{display:flex;gap:8px;flex-wrap:wrap}
+.flowbtns button{flex:1;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.note{font-size:11px;color:var(--muted);margin:0}
+
+/* ---------- admin drawer ---------- */
+.admin{position:absolute;top:0;right:0;bottom:0;width:440px;max-width:100%;background:var(--panel2);border-left:1px solid var(--accent);
+  transform:translateX(100%);transition:transform .2s ease;display:flex;flex-direction:column;z-index:20;box-shadow:-20px 0 40px rgba(0,0,0,.4)}
+.admin.open{transform:none}
+.admin header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--rule)}
+.admin header b{font-family:var(--display);font-size:20px;letter-spacing:.04em;color:var(--accent);flex:1}
+.admin .tabs{display:flex;border-bottom:1px solid var(--rule)}
+.admin .tabs button{flex:1;border:0;border-radius:0;border-bottom:2px solid transparent;padding:9px 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.admin .tabs button[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent)}
+.admin .body{overflow-y:auto;padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:12px}
+.admin h3{font-family:var(--display);font-weight:500;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--wire);margin:6px 0 0}
+.fld{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 10px;padding:7px 0;border-bottom:1px solid var(--rule)}
+.fld label{font-size:12px}
+.fld .help{grid-column:1/-1;font-size:10.5px;color:var(--muted)}
+.fld input[type=number],.fld input[type=text],.fld select{width:110px;background:var(--bg);color:var(--fg);border:1px solid var(--rule);border-radius:3px;padding:4px 6px;font:inherit;font-size:12px;text-align:right}
+.fld input[type=text]{text-align:left;width:160px}
+.fld input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.fld .multi{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 12px}
+.fld .multi label{display:flex;gap:5px;align-items:center;font-size:11.5px;cursor:pointer}
+.fld .multi input{accent-color:var(--accent)}
+.fld .unit{font-size:10px;color:var(--muted);margin-left:4px}
+.fld.changed label::after{content:" •";color:var(--accent)}
+.presetcols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.presetcols > div{border:1px solid var(--rule);border-radius:4px;padding:8px}
+.presetcols h4{margin:0 0 4px;font-family:var(--display);font-size:16px;letter-spacing:.06em}
+.presetcols .fld{grid-template-columns:1fr;gap:3px}
+.presetcols .fld input[type=number]{width:100%}
+.live{font-size:11.5px;border:1px dashed var(--rule);border-radius:4px;padding:8px;display:grid;grid-template-columns:auto 1fr;gap:2px 10px}
+.live dt{color:var(--muted)} .live dd{margin:0}
+.actions{display:flex;flex-wrap:wrap;gap:6px}
+.actions button{font-size:11px;letter-spacing:.04em}
+textarea.json{width:100%;min-height:180px;background:var(--bg);color:var(--fg);border:1px solid var(--rule);border-radius:3px;font:11px var(--mono);padding:6px}
+
+/* ---------- index page ---------- */
+.index{max-width:1100px;margin:0 auto;padding:28px 20px 60px}
+.index h1{font-family:var(--display);font-size:40px;margin:0;letter-spacing:.02em}
+.index .sub{color:var(--muted);margin:4px 0 24px}
+.levels{display:grid;gap:22px}
+.level h2{font-family:var(--display);font-weight:500;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.room{border:1px solid var(--rule);border-radius:6px;padding:12px;background:var(--panel);display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--fg)}
+.room b{font-family:var(--display);font-size:22px;letter-spacing:.03em}
+.room .meta{font-size:11px;color:var(--muted)}
+.room .st{font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
+.room.ready{border-color:var(--wire)} .room.ready:hover{border-color:var(--accent)}
+.room.ready .st{color:var(--good)} .room .st{color:var(--muted)}
+.tag{display:inline-block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-radius:3px;padding:1px 6px;margin-right:4px}
+.tag.p{background:rgba(255,107,98,.15);color:#ff9d95} .tag.t{background:rgba(111,168,220,.15);color:#9cc6ee}
+
+@media (max-width:900px){
+  .app{height:auto;min-height:100%}
+  .main{grid-template-columns:1fr}
+  .view{height:58vh}
+  .side{border-left:0;border-top:1px solid var(--rule)}
+  .admin{position:fixed;width:100%}
+}

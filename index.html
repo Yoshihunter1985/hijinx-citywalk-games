@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hijinx · Universal CityWalk · Game Rooms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="core/core.css">
+</head>
+<body>
+<main class="index">
+  <h1>Hijinx · Universal CityWalk</h1>
+  <p class="sub">Playable wireframe test rooms · draft room allocation · <span id="count"></span></p>
+  <div class="levels" id="levels"></div>
+  <p class="note" style="margin-top:28px">Room sizes from plan SK21 (24 Nov 2026). <span class="tag p">Physical</span><span class="tag t">Thinking</span> No two physical games share a wall.</p>
+</main>
+<script type="module">
+  import { ROOMS, ALLOCATION } from './core/venue.js';
+  const player = new URLSearchParams(location.search).get('mode') === 'player';
+  const ready = ALLOCATION.filter(a => a.path).length;
+  document.getElementById('count').textContent = `${ready} of ${ALLOCATION.length} playable`;
+  const levels = document.getElementById('levels');
+  for (const lvl of ['Upper', 'Ground']) {
+    const sec = document.createElement('section'); sec.className = 'level';
+    sec.innerHTML = `<h2>${lvl} level</h2><div class="rooms"></div>`;
+    for (const a of ALLOCATION.filter(a => ROOMS[a.room].level === lvl)) {
+      const r = ROOMS[a.room];
+      const el = document.createElement(a.path ? 'a' : 'div');
+      el.className = 'room' + (a.path ? ' ready' : '');
+      if (a.path) el.href = a.path + (player ? '?mode=player' : '');
+      el.innerHTML = `<span class="meta">${a.room === 'ELEV' ? 'Mock lift' : a.room} · ${Math.round(Math.max(r.d, r.w) * 1000)} × ${Math.round(Math.min(r.d, r.w) * 1000)} mm${r.note ? ' · ' + r.note : ''}</span>
+        <b>${a.game}</b>
+        <span>${a.type === 'P' ? '<span class="tag p">Physical</span>' : a.type === 'T' ? '<span class="tag t">Thinking</span>' : ''}</span>
+        <span class="st">${a.path ? 'Playable →' : 'Planned'}</span>`;
+      sec.querySelector('.rooms').appendChild(el);
+    }
+    levels.appendChild(sec);
+  }
+</script>
+</body>
+</html>

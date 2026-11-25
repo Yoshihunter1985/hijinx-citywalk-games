@@ -1,2 +1,60 @@
-# hijinx-citywalk-games
-Hijinx design for Universal
+# Hijinx · Universal CityWalk · game room simulator
+
+Playable wireframe test rooms for the Hijinx section of the Universal CityWalk Hollywood venue: 10 quickplay rooms over two levels, plus the mock-lift elevator. The simulator is for testing gameplay and for demoing it to others (you drive it, or screen-record it).
+
+Spec, room allocation and decisions live in the **Game Room Spec** doc. This repo is the code.
+
+## Open it
+
+- **Venue page:** `index.html`, which lists every room and links to the playable ones.
+- **Player mode:** add `?mode=player` to any URL. This hides the Admin button. It's for sharing, not security, so anyone who removes the parameter gets admin back.
+
+It's a static site, so GitHub Pages serves it as-is. To run it locally, use any static server from the repo root, for example `python -m http.server`, then open `http://localhost:8000`. Opening the file directly won't work, because browsers block ES modules on `file://`.
+
+## Layout
+
+```
+index.html              venue page (rooms by level, from core/venue.js)
+core/
+  venue.js              room sizes, doors, cabinets (plan SK21) + draft allocation
+  room.js               wireframe 3D room: walls, door, cabinet, screens, props, picking
+  shell.js              shared game shell: outside screen, RFID/queue, clock, inputs,
+                        score screen, settings + easy/hard presets, admin drawer
+  draw.js               canvas helpers for in-room screens
+  core.css              shared look
+  vendor/               three.js r170 + OrbitControls (MIT, vendored so nothing loads from a CDN)
+games/
+  piano/                R4 music quiz (game 1)
+```
+
+## What every game gets from the core
+
+- **A room at its real size.** Door, game cabinet, a 12" outside screen and a score screen above the door are drawn automatically.
+- **The outside screen flow:** tap card (team name), then pick Easy or Hard, then the game runs with the time left shown. Tapping more cards while a game runs queues those teams.
+- **Inputs three ways:** click the prop in 3D, click the side-panel buttons, or use keys 1–4.
+- **Admin drawer, in four tabs:**
+  - **Demo:** live state plus room and game actions.
+  - **Settings:** global settings.
+  - **Easy / Hard:** the two presets side by side.
+  - **Save & share:** export or import the settings JSON.
+
+## Settings
+
+Admin changes save in your browser straight away. To make them the default for everyone, including player mode on other devices, open **Save & share**, download `settings.json`, and commit it into that game's folder, for example `games/piano/settings.json`.
+
+## Adding a game
+
+Copy `games/piano/` as a template:
+
+1. Define `SCHEMA` (settings, with `preset: true` for per-difficulty ones) and `PRESETS`.
+2. Write a game class with these hooks: `setup`, `begin`, `press`, `tick`, `onTimeUp`, `reset`, `draw`, `scoreboard`, and optionally `adminInfo` and `adminActions`.
+3. Build props in `setup()` with `room.wireMesh()`, `room.wallPose()` and `room.clickable()`.
+4. Set `path` for the room in `core/venue.js`.
+
+## Piano (R4)
+
+- **Room:** four prop instruments (piano, drum, guitar, sax), each with one button, and one large question screen.
+- **Start:** players pick a genre by pressing an instrument: Piano = Mixed Bag, Drum = 80s, Guitar = 90s, Sax = 2000s.
+- **Rounds:** each song is a 20 s snippet with 4 answers, one per instrument. Points slide from 1,000 down to 100 over the snippet. A wrong answer scores nothing and the game moves on. The game lasts 3 minutes.
+- **Hard mode:** every song plays through a different distortion: chipmunk, slow-mo, underwater, warped tape, bit-crushed, old radio or backwards. You choose which ones are used, and how strong, in admin.
+- **Audio:** all songs are generated in the browser from made-up titles (`games/piano/songs.js`, `music.js`). There is no real music. To use real clips later, add `file: 'audio/name.mp3'` to a song. The game plays the file when it exists and falls back to the generated tune when it doesn't. Only commit clips you're licensed to use: this repo is public.
