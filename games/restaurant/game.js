@@ -84,14 +84,6 @@ class RestaurantGame {
     sc.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px';
     this.tables.forEach(T => { T.screen.canvas.className = 'screen'; sc.appendChild(T.screen.canvas); });
 
-    // top-down map: click a table's left or right half to turn it
-    this.mapEl = shell.addCard('Tables', 'top-down · click the top or bottom half of a table to turn it');
-    const mc = this.mapCanvas = document.createElement('canvas'); mc.width = 380; mc.height = 500; mc.className = 'screen clickable';
-    this.mapEl.appendChild(mc);
-    mc.addEventListener('click', e => {
-      const r = mc.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * mc.width, py = (e.clientY - r.top) / r.height * mc.height;
-      for (const T of this.tables) if (Math.hypot(px - T.mx, py - T.my) < 52) { shell.unlockAudio(); this.turn(T, py < T.my ? -1 : 1); shell.redrawAll(); break; }
-    });
     room.onFrame((dt) => this._animate(dt));
   }
 
@@ -234,7 +226,7 @@ class RestaurantGame {
   }
 
   // ---------- screens ----------
-  draw() { this.tables.forEach(T => this._drawScreen(T)); this._drawMap(); }
+  draw() { this.tables.forEach(T => this._drawScreen(T)); }
   _frame(ctx, W, H) {
     ctx.fillStyle = '#1a0a0e'; ctx.fillRect(0, 0, W, H);
     ctx.strokeStyle = '#d9a93a'; ctx.lineWidth = 14; ctx.strokeRect(7, 7, W - 14, H - 14);
@@ -274,32 +266,6 @@ class RestaurantGame {
     if (T.ok) { rr(ctx, 70, 400, W - 140, 110, 14); ctx.fillStyle = 'rgba(20,60,35,.92)'; ctx.fill(); fit(ctx, this.phase === 'cleared' ? 'ORDER UP!' : '✓ READY', W / 2, 478, W - 160, 64, { color: '#5fd38d', align: 'center' }); }
     S.commit();
   }
-  _drawMap() {
-    const c = this.mapCanvas; if (!c) return; const ctx = c.getContext('2d'), W = c.width, H = c.height, spec = this.room.spec;
-    ctx.fillStyle = '#060b14'; ctx.fillRect(0, 0, W, H);
-    const sx = 300 / spec.w, ox = 40, oy = 30, mx = (x) => ox + (x + spec.w / 2) * sx, my = (z) => oy + (z + spec.d / 2) * (420 / spec.d);
-    ctx.strokeStyle = '#6fa8dc'; ctx.lineWidth = 2; ctx.strokeRect(ox, oy, 300, 420);
-    const dx = ox + spec.door.x * sx; ctx.strokeStyle = '#ffb547'; ctx.beginPath(); ctx.moveTo(dx - 0.45 * sx, 452); ctx.lineTo(dx + 0.45 * sx, 452); ctx.stroke();
-    fit(ctx, 'DOOR', dx, 472, 80, 14, { color: '#ffb547', align: 'center', weight: 600 });
-    fit(ctx, 'WINDOWS', W / 2, 22, 120, 12, { color: '#e8d8b0', align: 'center', weight: 600 });
-    for (const T of this.tables) {
-      const cx = mx(T.x), cy = my(T.z); T.mx = cx; T.my = cy;
-      // portrait on the wall
-      const wx = T.x < 0 ? ox : ox + 300; ctx.fillStyle = T.active && this.shell.state === 'inroom' ? (T.ok ? '#5fd38d' : '#d9a93a') : '#5a4a2a'; ctx.fillRect(wx - 4, cy - 22, 8, 44);
-      const R = 0.62 * sx, F = FLAT * sx, da = Math.acos(FLAT / 0.62), base = T.front;
-      ctx.beginPath(); ctx.arc(cx, cy, R, base + da, base + Math.PI * 2 - da); ctx.closePath(); ctx.fillStyle = '#2a170c'; ctx.fill(); ctx.strokeStyle = T.active ? (T.ok ? '#5fd38d' : '#d9a93a') : '#4a3a2a'; ctx.lineWidth = 3; ctx.stroke();
-      // serving pointer
-      const fa = T.front; ctx.fillStyle = '#d9a93a'; ctx.beginPath(); ctx.moveTo(cx + Math.cos(fa) * (F - 9), cy); ctx.lineTo(cx + Math.cos(fa) * F, cy - 7); ctx.lineTo(cx + Math.cos(fa) * F, cy + 7); ctx.fill();
-      ctx.beginPath(); ctx.arc(cx, cy, 0.45 * sx, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(217,169,58,.35)'; ctx.lineWidth = 1.5; ctx.stroke();
-      T.foods.forEach((f, i) => {
-        const a = T.front + (i - T.angle / STEP) * STEP, px = cx + Math.cos(a) * 0.3 * sx, py = cy + Math.sin(a) * 0.3 * sx;
-        ctx.font = `19px ${EMOJI_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f.e, px, py + 1);
-      });
-      fit(ctx, String(T.t + 1), cx, cy + 6, 30, 18, { color: '#d9a93a', align: 'center' });
-      const ix = cx - Math.cos(fa) * 30; fit(ctx, '⟲', ix, cy - 44, 30, 18, { color: '#8094ae', align: 'center' }); fit(ctx, '⟳', ix, cy + 52, 30, 18, { color: '#8094ae', align: 'center' });
-    }
-  }
-
   adminInfo() {
     return [['Phase', this.phase], ['Round', this.round || 0], ['Score', fmtNum(this.score || 0)],
       ...this.tables.map(T => [`Table ${T.t + 1}`, T.active ? `${T.target.name} (${T.clue.pic ? 'picture' : '“' + T.clue.text + '”'}) · showing ${this.frontFood(T).name}${T.ok ? ' ✓' : ''}` : `portrait · ${T.foods.map(f => f.e).join('')}`])];
@@ -340,7 +306,7 @@ const shell = new GameShell({
     'Serve every table in play at once to clear the round!',
   ],
   blurbs: { easy: 'Pictures first, then simple descriptions.', hard: 'Riddles and clues about the other tables.' },
-  footnote: 'Click a table in the room to turn it, or click the top/bottom half of a table on the Tables map.',
+  footnote: 'Click a table in the room to turn it.',
   game: new RestaurantGame(),
 });
 shell.start();

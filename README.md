@@ -94,5 +94,5 @@ Four half-moon tables butted against the side walls under the portraits (flat ed
 
 - **Easy:** 2 tables to start (one more every 2 rounds), pictures for the first 2 rounds, then simple words ("The croissant", "Something red").
 - **Hard:** 3 tables to start, riddles plus clues about other tables ("The only dish you share with the table opposite", "Whatever the table next door is serving").
-- Click a table in 3D to turn it, or click the top/bottom half of a table on the Tables map.
+- Click a table in 3D to turn it.
 - Table food layout is fixed by a seed in admin settings, so teams can learn the room.
