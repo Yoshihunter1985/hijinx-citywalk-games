@@ -90,9 +90,9 @@ This is a standalone page rather than a shell game. It's the Elevator Experience
 
 ## Restaurant (R6)
 
-Four round tables, each with a spinning top (lazy Susan) holding 6 food domes. The portrait screen above each table shows an order and an arrow; the team turns the whole tabletop until that dish sits under the arrow. A round clears when every table in play is showing its order at once. Unused screens show animal portraits.
+Four half-moon tables butted against the side walls under the portraits (flat edge on the wall), each with a spinning top (lazy Susan) holding 6 food domes. The portrait screen above each table shows an order and an arrow; the team turns the whole tabletop until that dish sits under the arrow. A round clears when every table in play is showing its order at once. Unused screens show animal portraits.
 
 - **Easy:** 2 tables to start (one more every 2 rounds), pictures for the first 2 rounds, then simple words ("The croissant", "Something red").
 - **Hard:** 3 tables to start, riddles plus clues about other tables ("The only dish you share with the table opposite", "Whatever the table next door is serving").
-- Click a table in 3D to turn it, or click the left/right half of a table on the Tables map.
+- Click a table in 3D to turn it, or click the top/bottom half of a table on the Tables map.
 - Table food layout is fixed by a seed in admin settings, so teams can learn the room.

@@ -7,6 +7,7 @@ import { FOODS, COLOUR_RIDDLE, PORTRAITS } from './foods.js';
 
 const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
 const STEP = Math.PI / 3;
+const FLAT = 0.42; // distance from table centre to the flat edge on the wall
 const RED = 0x9e1b2a, GOLD = 0xd9a93a, WOODC = 0x6b3a1e;
 
 const SCHEMA = [
@@ -68,7 +69,8 @@ class RestaurantGame {
     // ---- four tables: 1 back-left, 2 back-right, 3 front-left, 4 front-right ----
     const R = rng(1000 + (shell.settings.tableSeed || 1));
     const deck = () => { const a = FOODS.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, 6); };
-    const spots = [[-0.95, -1.0], [0.95, -1.0], [-0.95, 0.75], [0.95, 0.75]];
+    // half-moon tables butted against the side walls, flat edge on the wall, under each portrait
+    const tx = hw - FLAT, spots = [[-tx, -1.0], [tx, -1.0], [-tx, 0.75], [tx, 0.75]];
     this.tables = spots.map(([x, z], t) => this._buildTable(t, x, z, deck(), x < 0 ? Math.PI : 0));
     this.tables.forEach((T, t) => { T.opp = this.tables[t ^ 1]; T.next = this.tables[t ^ 2]; });
 
@@ -83,12 +85,12 @@ class RestaurantGame {
     this.tables.forEach(T => { T.screen.canvas.className = 'screen'; sc.appendChild(T.screen.canvas); });
 
     // top-down map: click a table's left or right half to turn it
-    this.mapEl = shell.addCard('Tables', 'top-down · click left or right side of a table to turn it');
+    this.mapEl = shell.addCard('Tables', 'top-down · click the top or bottom half of a table to turn it');
     const mc = this.mapCanvas = document.createElement('canvas'); mc.width = 380; mc.height = 500; mc.className = 'screen clickable';
     this.mapEl.appendChild(mc);
     mc.addEventListener('click', e => {
       const r = mc.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * mc.width, py = (e.clientY - r.top) / r.height * mc.height;
-      for (const T of this.tables) if (Math.hypot(px - T.mx, py - T.my) < 62) { shell.unlockAudio(); this.turn(T, px < T.mx ? -1 : 1); shell.redrawAll(); break; }
+      for (const T of this.tables) if (Math.hypot(px - T.mx, py - T.my) < 52) { shell.unlockAudio(); this.turn(T, py < T.my ? -1 : 1); shell.redrawAll(); break; }
     });
     room.onFrame((dt) => this._animate(dt));
   }
@@ -96,19 +98,20 @@ class RestaurantGame {
   _buildTable(t, x, z, foods, front) {
     const room = this.room, scene = room.scene, gold = new THREE.Color(GOLD);
     const ped = room.wireMesh(new THREE.CylinderGeometry(0.08, 0.22, 0.72, 10), new THREE.Color(WOODC), { fillOpacity: 0.3 }); ped.position.set(x, 0.36, z); scene.add(ped);
-    const rim = room.wireMesh(new THREE.CylinderGeometry(0.58, 0.58, 0.04, 36), new THREE.Color(WOODC), { fillOpacity: 0.35 }); rim.position.set(x, 0.74, z); scene.add(rim);
+    // fixed base: a circle with the wall side cut flat, pushed against the wall
+    const rim = room.wireMesh(dTableGeometry(0.62, FLAT, 0.05), new THREE.Color(WOODC), { fillOpacity: 0.35 }); rim.rotation.y = front === 0 ? 0 : Math.PI; rim.position.set(x, 0.72, z); scene.add(rim);
     // fixed gold serving pointer on the rim, facing the portrait
     const ptr = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 3), new THREE.MeshBasicMaterial({ color: GOLD }));
-    ptr.rotation.z = Math.PI / 2 * (front === 0 ? -1 : 1); ptr.position.set(x + Math.cos(front) * 0.64, 0.78, z + Math.sin(front) * 0.64); scene.add(ptr);
+    ptr.rotation.z = Math.PI; ptr.position.set(x + Math.cos(front) * (FLAT - 0.02), 1.0, z); scene.add(ptr); // on the wall, pointing down at the serving spot
     // the spinning top
     const top = new THREE.Group(); top.position.set(x, 0.77, z); scene.add(top);
-    const disc = room.wireMesh(new THREE.CylinderGeometry(0.52, 0.52, 0.03, 36), new THREE.Color(0x8a5a2b), { fillOpacity: 0.5 }); top.add(disc);
+    const disc = room.wireMesh(new THREE.CylinderGeometry(0.45, 0.45, 0.03, 36), new THREE.Color(0x8a5a2b), { fillOpacity: 0.5 }); top.add(disc);
     foods.forEach((f, i) => {
-      const a = front + i * STEP, px = Math.cos(a) * 0.36, pz = Math.sin(a) * 0.36;
-      const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.01, 20), new THREE.MeshBasicMaterial({ color: 0xf2ead8 })); plate.position.set(px, 0.02, pz); top.add(plate);
-      const dome = room.wireMesh(new THREE.SphereGeometry(0.115, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.Color(0xcfe8ff), { fillOpacity: 0.06, threshold: 30 }); dome.position.set(px, 0.025, pz); top.add(dome);
-      const knob = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), new THREE.MeshBasicMaterial({ color: GOLD })); knob.position.set(px, 0.15, pz); top.add(knob);
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTexture(f.e), transparent: true, depthWrite: false })); sp.scale.set(0.12, 0.12, 1); sp.position.set(px, 0.08, pz); top.add(sp);
+      const a = front + i * STEP, px = Math.cos(a) * 0.3, pz = Math.sin(a) * 0.3;
+      const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.01, 20), new THREE.MeshBasicMaterial({ color: 0xf2ead8 })); plate.position.set(px, 0.02, pz); top.add(plate);
+      const dome = room.wireMesh(new THREE.SphereGeometry(0.1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.Color(0xcfe8ff), { fillOpacity: 0.06, threshold: 30 }); dome.position.set(px, 0.025, pz); top.add(dome);
+      const knob = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), new THREE.MeshBasicMaterial({ color: GOLD })); knob.position.set(px, 0.13, pz); top.add(knob);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTexture(f.e), transparent: true, depthWrite: false })); sp.scale.set(0.11, 0.11, 1); sp.position.set(px, 0.08, pz); top.add(sp);
     });
     const T = { t, x, z, foods, front, top, rot: 0, angle: 0, target: null, clue: null, active: false, ok: false };
     room.clickable(top, 'table' + t, `Table ${t + 1}: click to turn`);
@@ -283,15 +286,17 @@ class RestaurantGame {
       const cx = mx(T.x), cy = my(T.z); T.mx = cx; T.my = cy;
       // portrait on the wall
       const wx = T.x < 0 ? ox : ox + 300; ctx.fillStyle = T.active && this.shell.state === 'inroom' ? (T.ok ? '#5fd38d' : '#d9a93a') : '#5a4a2a'; ctx.fillRect(wx - 4, cy - 22, 8, 44);
-      ctx.beginPath(); ctx.arc(cx, cy, 58, 0, Math.PI * 2); ctx.fillStyle = '#2a170c'; ctx.fill(); ctx.strokeStyle = T.active ? (T.ok ? '#5fd38d' : '#d9a93a') : '#4a3a2a'; ctx.lineWidth = 3; ctx.stroke();
+      const R = 0.62 * sx, F = FLAT * sx, da = Math.acos(FLAT / 0.62), base = T.front;
+      ctx.beginPath(); ctx.arc(cx, cy, R, base + da, base + Math.PI * 2 - da); ctx.closePath(); ctx.fillStyle = '#2a170c'; ctx.fill(); ctx.strokeStyle = T.active ? (T.ok ? '#5fd38d' : '#d9a93a') : '#4a3a2a'; ctx.lineWidth = 3; ctx.stroke();
       // serving pointer
-      const fa = T.front; ctx.fillStyle = '#d9a93a'; ctx.beginPath(); ctx.moveTo(cx + Math.cos(fa) * 66, cy); ctx.lineTo(cx + Math.cos(fa) * 58, cy - 7); ctx.lineTo(cx + Math.cos(fa) * 58, cy + 7); ctx.fill();
+      const fa = T.front; ctx.fillStyle = '#d9a93a'; ctx.beginPath(); ctx.moveTo(cx + Math.cos(fa) * (F - 9), cy); ctx.lineTo(cx + Math.cos(fa) * F, cy - 7); ctx.lineTo(cx + Math.cos(fa) * F, cy + 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, 0.45 * sx, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(217,169,58,.35)'; ctx.lineWidth = 1.5; ctx.stroke();
       T.foods.forEach((f, i) => {
-        const a = T.front + (i - T.angle / STEP) * STEP, px = cx + Math.cos(a) * 38, py = cy + Math.sin(a) * 38;
-        ctx.font = `24px ${EMOJI_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f.e, px, py + 1);
+        const a = T.front + (i - T.angle / STEP) * STEP, px = cx + Math.cos(a) * 0.3 * sx, py = cy + Math.sin(a) * 0.3 * sx;
+        ctx.font = `19px ${EMOJI_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(f.e, px, py + 1);
       });
       fit(ctx, String(T.t + 1), cx, cy + 6, 30, 18, { color: '#d9a93a', align: 'center' });
-      fit(ctx, '⟲', cx - 46, cy + 52, 30, 18, { color: '#8094ae', align: 'center' }); fit(ctx, '⟳', cx + 46, cy + 52, 30, 18, { color: '#8094ae', align: 'center' });
+      const ix = cx - Math.cos(fa) * 30; fit(ctx, '⟲', ix, cy - 44, 30, 18, { color: '#8094ae', align: 'center' }); fit(ctx, '⟳', ix, cy + 52, 30, 18, { color: '#8094ae', align: 'center' });
     }
   }
 
@@ -307,6 +312,13 @@ class RestaurantGame {
   }
 }
 
+function dTableGeometry(r, flat, depth) {
+  // circle of radius r with the +x side cut flat at x = flat; extruded downward, lying in XZ
+  const da = Math.acos(flat / r), sh = new THREE.Shape();
+  sh.absarc(0, 0, r, da, Math.PI * 2 - da, false); sh.closePath();
+  const g = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: false, curveSegments: 36 });
+  g.rotateX(Math.PI / 2); return g;
+}
 function emojiTexture(e) {
   const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
   x.font = `100px ${EMOJI_FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(e, 64, 70);
@@ -328,7 +340,7 @@ const shell = new GameShell({
     'Serve every table in play at once to clear the round!',
   ],
   blurbs: { easy: 'Pictures first, then simple descriptions.', hard: 'Riddles and clues about the other tables.' },
-  footnote: 'Click a table in the room to turn it, or click the left/right side of a table on the Tables map.',
+  footnote: 'Click a table in the room to turn it, or click the top/bottom half of a table on the Tables map.',
   game: new RestaurantGame(),
 });
 shell.start();
