@@ -72,7 +72,7 @@ Copy `games/piano/` as a template:
 
 ## Claw Quiz (R9)
 
-- **Room:** a central block runs out from the back wall. The claw machine sits against the wall, then a walk-through tunnel gap, then the console facing the door, which has the question screen and buttons A–D. The credit display sits on the tunnel header. There's an 85" collage screen on each of the left and right walls.
+- **Room:** a central block runs out from the back wall. The claw machine sits against the wall, then a walk-through tunnel gap, then the console facing the door, which has the question screen and buttons A–D. The credit display sits on the tunnel header. Collage screens: an 85" on each side wall, and two 75" on the back wall either side of the block (1.95 m free each side, so 75" is the biggest that fits).
 - **Theme:** players pick one with buttons A–D. The four offered are chosen in admin from Sport, Emoji, Teddies, Space, Food and Animals.
 - **Question pack:** each theme has one fixed collage and every question it can answer: how many, which is NOT on the screens, and (hard) which is there the most of. Each pack is short (8 questions on easy, 10 on hard). The collage and questions are the same every game, so teams can learn it. Change the "collage layout number" in admin, or press "New collage layout", to get a new one. Question order is shuffled each game.
 - **Timing and scoring:** 20 s per question on easy and 15 s on hard, inside a 3-minute game. A wrong answer just moves on. Every 4 correct answers earns a claw credit, shown as a pop-up and on the credit display. The claw itself isn't simulated.

@@ -46,18 +46,22 @@ class ClawQuizGame {
   setup(shell) {
     this.shell = shell; const room = this.room = shell.room, { w, d } = room.spec;
     shell.setInputs(BTN.map(b => ({ id: b.id, label: b.letter, color: b.color, key: b.key })));
-    shell.setLegend([['#6fa8dc', 'Collage screens (85"), left + right walls'], ['#ff5fa2', 'Claw machine'], ['#ffb547', 'Console: question screen + buttons']]);
+    shell.setLegend([['#6fa8dc', 'Collage screens: 85" side walls, 75" back wall'], ['#ff5fa2', 'Claw machine'], ['#ffb547', 'Console: question screen + buttons']]);
 
-    // ---- 85" collage screens (1.88 × 1.06 m), one on each side wall ----
-    this.wallNames = ['Left wall', 'Right wall'];
+    // ---- collage screens: 85" (1.88 × 1.06 m) on each side wall, and 75" (1.66 × 0.93 m) either side
+    // of the claw block on the back wall — 1.95 m is free each side, so 75" is the largest that fits
+    const BW = 1.1, sideX = (w / 2 + BW / 2) / 2; // centre of the free space either side of the block
+    this.wallNames = ['Left wall', 'Back left', 'Back right', 'Right wall'];
     this.walls = [
       new Surface(room.addScreen({ wall: 'left', u: d / 2, v: 1.5, width: 1.88, height: 1.06, px: [1280, 720], label: 'LEFT WALL · 85"' })),
+      new Surface(room.addScreen({ wall: 'back', u: w / 2 - sideX, v: 1.5, width: 1.66, height: 0.93, px: [1280, 720], label: 'BACK LEFT · 75"' })),
+      new Surface(room.addScreen({ wall: 'back', u: w / 2 + sideX, v: 1.5, width: 1.66, height: 0.93, px: [1280, 720], label: 'BACK RIGHT · 75"' })),
       new Surface(room.addScreen({ wall: 'right', u: d / 2, v: 1.5, width: 1.88, height: 1.06, px: [1280, 720], label: 'RIGHT WALL · 85"' })),
     ];
 
     // ---- central block off the back wall: claw machine, a walk-through tunnel gap, then the console ----
     // (along z: claw 1.0 m deep against the back wall, 0.7 m tunnel, console 0.6 m facing the door)
-    const pink = new THREE.Color('#ff5fa2'), BW = 1.1, clawD = 1.0, gapD = 0.7, conD = 0.6;
+    const pink = new THREE.Color('#ff5fa2'), clawD = 1.0, gapD = 0.7, conD = 0.6;
     const z0 = -d / 2, zClaw = z0 + clawD, zCon0 = zClaw + gapD, zCon1 = zCon0 + conD;
     this.block = { zClaw, zCon0, zCon1 };
     const add = (geo, pos, op = 0.08) => { const m = room.wireMesh(geo, pink, { fillOpacity: op }); m.position.copy(pos); room.scene.add(m); return m; };
@@ -223,11 +227,13 @@ class ClawQuizGame {
     const ph = this.phase, r = this.round;
     if (ph === 'theme' && this.offered) {
       // preview of each theme on its own screen
-      [0, 1].forEach(h => {
-        const k = i * 2 + h, tid = this.offered[k], th = THEMES[tid], b = BTN[k], y0 = 120 + h * 300;
-        fit(ctx, `${b.letter} · ${th.label.toUpperCase()}`, 160, y0 + 90, 560, 90, { color: b.color });
-        th.items.slice(0, 4).map(item).forEach((it, n) => this._emoji(ctx, it.e, 760 + n * 130, y0 + 60, 100, 0));
-      });
+      const per = Math.ceil(4 / this.walls.length);
+      for (let h = 0; h < per; h++) {
+        const k = i * per + h; if (k >= 4) break;
+        const tid = this.offered[k], th = THEMES[tid], b = BTN[k], rowH = 600 / per, y0 = 110 + h * rowH;
+        fit(ctx, `${b.letter} · ${th.label.toUpperCase()}`, W / 2, y0 + rowH * 0.38, W - 160, per === 1 ? 130 : 90, { color: b.color, align: 'center' });
+        th.items.slice(0, 5).map(item).forEach((it, n) => this._emoji(ctx, it.e, W / 2 + (n - 2) * 170, y0 + rowH * 0.72, per === 1 ? 130 : 90, 0));
+      }
     } else if (r && (ph === 'question' || ph === 'reveal' || ph === 'over')) {
       const showKeys = ph === 'reveal' || this.shell.settings.demoHighlight;
       for (const p of r.screens[i]) {
