@@ -61,18 +61,29 @@ export function makePack(themeId, cfg) {
   return { theme: themeId, screens, pack: shuffle(pack), counts };
 }
 
-// Scatter items over a 1280 × 720 screen on a jittered grid so they don't overlap.
+// Lay items out as a collage: mixed sizes that fill the screen and overlap a little.
+// Every picture keeps its centre clear of the others, so nothing is ever fully hidden
+// (counts stay fair). Big pictures are drawn first, small ones on top.
 function place(list, cfg, R) {
   const W = 1280, H = 720, n = Math.max(1, list.length);
-  const cols = Math.ceil(Math.sqrt(n * W / H)), rows = Math.ceil(n / cols);
-  const cells = Array.from({ length: cols * rows }, (_, i) => i);
-  for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
-  const cw = (W - 80) / cols, ch = (H - 110) / rows;
-  list.forEach((p, i) => {
-    const c = cells[i] % cols, r = Math.floor(cells[i] / cols);
-    const size = Math.min(cfg.size, cw * 0.9, ch * 0.9) * (0.85 + R() * 0.3);
-    p.x = 40 + cw * (c + 0.5) + (cw - size) * (R() - 0.5) * 0.8;
-    p.y = 90 + ch * (r + 0.5) + (ch - size) * (R() - 0.5) * 0.8;
-    p.size = size; p.rot = cfg.rotate ? (R() - 0.5) * 1.2 : 0;
-  });
+  // average size: big enough to fill the screen, but no more than ~2× the 'picture size' setting
+  const avg = Math.min(cfg.size * 1.9, Math.max(cfg.size, Math.sqrt((W * H * 1.15) / n)));
+  list.forEach(p => { p.size = avg * (0.55 + R() * 0.95); });
+  list.sort((a, b) => b.size - a.size);
+  const placed = [];
+  for (const p of list) {
+    const r = p.size / 2;
+    let best = null, bestScore = -Infinity;
+    for (let t = 0; t < 80; t++) {
+      const x = r * 0.85 + R() * (W - r * 1.7), y = r * 0.85 + R() * (H - r * 1.7);
+      // score = worst clearance ratio to anything already placed (>= 0.55 means centres stay clear)
+      let worst = Infinity;
+      for (const q of placed) worst = Math.min(worst, Math.hypot(q.x - x, q.y - y) / ((q.size + p.size) / 2));
+      if (worst >= 0.72) { best = { x, y }; break; }
+      if (worst > bestScore) { bestScore = worst; best = { x, y }; }
+    }
+    p.x = best.x; p.y = best.y;
+    p.rot = (R() - 0.5) * (cfg.rotate ? 1.2 : 0.45);
+    placed.push(p);
+  }
 }

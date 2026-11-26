@@ -37,7 +37,7 @@ const SCHEMA = [
 ];
 const PRESETS = {
   easy: { packSize: 8, questionTime: 20, types: ['count', 'not'], countMin: 2, countMax: 5, pictures: true, size: 120, rotate: false, collageSeed: 1 },
-  hard: { packSize: 10, questionTime: 15, types: ['count', 'not', 'most'], countMin: 4, countMax: 9, pictures: false, size: 82, rotate: true, collageSeed: 1 },
+  hard: { packSize: 10, questionTime: 15, types: ['count', 'not', 'most'], countMin: 5, countMax: 12, pictures: false, size: 82, rotate: true, collageSeed: 1 },
 };
 
 class ClawQuizGame {
@@ -222,8 +222,6 @@ class ClawQuizGame {
     // neutral "vinyl-like" backdrop pattern
     ctx.strokeStyle = 'rgba(255,255,255,0.035)'; ctx.lineWidth = 2;
     for (let x = -H; x < W; x += 48) { ctx.beginPath(); ctx.moveTo(x, H); ctx.lineTo(x + H, 0); ctx.stroke(); }
-    rr(ctx, 18, 16, 250, 64, 12); ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fill();
-    fit(ctx, this.wallNames[i].toUpperCase(), 143, 64, 220, 44, { color: '#ffffff', align: 'center' });
     const ph = this.phase, r = this.round;
     if (ph === 'theme' && this.offered) {
       // preview of each theme on its own screen
@@ -244,6 +242,9 @@ class ClawQuizGame {
       fit(ctx, 'HIJINX HOTEL', W / 2, 360, W - 200, 90, { color: 'rgba(255,255,255,0.18)', align: 'center' });
       fit(ctx, 'CLAW QUIZ', W / 2, 430, W - 200, 46, { color: 'rgba(255,255,255,0.12)', align: 'center', weight: 600 });
     }
+    // screen name on top of everything
+    rr(ctx, 18, 16, 250, 64, 12); ctx.fillStyle = 'rgba(16,24,38,0.85)'; ctx.fill();
+    fit(ctx, this.wallNames[i].toUpperCase(), 143, 64, 220, 44, { color: '#ffffff', align: 'center' });
     S.commit();
     const tc = S.thumb.getContext('2d'); tc.drawImage(S.canvas, 0, 0, 320, 180);
   }
