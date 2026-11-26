@@ -36,7 +36,7 @@ export const MAP = {
 
 // Draft allocation — matches the spec doc. Physical (P) vs thinking (T).
 export const ALLOCATION = [
-  { room: 'R1',  game: 'Titanic',          type: 'P', path: null },
+  { room: 'R1',  game: 'Titanic',          type: 'P', path: 'games/titanic/index.html' },
   { room: 'R2',  game: 'Abandoned Arcade', type: 'T', path: null },
   { room: 'R3',  game: 'Puck Slide',       type: 'P', path: null },
   { room: 'R4',  game: 'Piano',            type: 'T', path: 'games/piano/index.html' },
