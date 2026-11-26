@@ -38,7 +38,7 @@ const PRESETS = {
 };
 
 class LightFloorGame {
-  constructor() { this.time = 0; this.active = null; this.ripples = []; }
+  constructor() { this.time = 0; this.active = null; }
 
   setup(shell) {
     this.shell = shell;
@@ -81,8 +81,6 @@ class LightFloorGame {
     if (this.shell.state === 'inroom' && this.active) {
       if (this.active.press(t) && this.active === this.defence) this.shell.beep(1200, 0.05, 'square', 0.08);
       this.renderPlayers();
-    } else if (!this.active) {
-      this.ripples.push({ o: t.pos.clone(), t: 0, col: ['#ff4fa3', '#3fd0ff', '#ffb547', '#9d8bff'][this.ripples.length % 4] });
     }
   }
   score() {
@@ -109,21 +107,12 @@ class LightFloorGame {
   tick(dt) {
     this.time += dt;
     const api = this.api; api.begin();
+    // tiles stay dark unless a game is running (or showing its end state)
     if (this.active && this.shell.state !== 'idle') {
       this.active.update(dt, this.time);
       if (this.endT != null) { this.endT -= dt; if (this.endT <= 0) { this.endT = null; if (this.shell.state === 'inroom') this._finish(); } }
-    } else this._attract(dt);
-    api.flush();
-  }
-  _attract(dt) {
-    const api = this.api, tmp = this._tmp || (this._tmp = new THREE.Color()), time = this.time;
-    for (const t of api.tiles) {
-      const v = Math.sin(time * 2.2 - (t.pos.x * 1.7 + t.pos.z * 1.2 + t.pos.y * 1.9));
-      tmp.setHSL(((time * 0.05 + t.pos.z * 0.06 + t.pos.y * 0.05) % 1 + 1) % 1, 0.85, 0.6);
-      const l = Math.pow(Math.max(0, v), 4) * 0.7; if (l > 0.02) api.put(t, '#' + tmp.getHexString(), l);
     }
-    this.ripples.forEach(w => w.t += dt); this.ripples = this.ripples.filter(w => w.t * 2.4 < 7);
-    for (const w of this.ripples) { const r = w.t * 2.4; for (const t of api.tiles) { const v = Math.max(0, 1 - Math.abs(t.pos.distanceTo(w.o) - r) / 0.38) * (1 - r / 7); if (v > 0.05) api.put(t, w.col, v); } }
+    api.flush();
   }
   reset() { this.active = null; this.endT = null; this.api.clear(); this.renderPlayers(); }
   scoreboard() {

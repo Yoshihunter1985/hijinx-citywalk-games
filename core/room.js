@@ -196,6 +196,9 @@ export class Room3D {
   // ---------- picking ----------
   _bindPointer() {
     const el = this.renderer.domElement, ray = new THREE.Raycaster(), p = new THREE.Vector2();
+    // Lines default to a 1 m pick radius in three.js, which let wireframe edges of nearby
+    // objects steal clicks (e.g. the wrong light-floor tile). Pick lines only when very close.
+    ray.params.Line.threshold = 0.005; ray.params.Points.threshold = 0.005;
     let down = null;
     const hit = (e) => {
       const r = el.getBoundingClientRect();
