@@ -27,6 +27,7 @@ games/
   piano/                R4 music quiz (game 1)
   lightfloor/           R8 light-up tile room: Planet Defence + Colour Call (game 2)
   clawquiz/             R9 search-the-collage quiz that earns claw machine credits (game 3)
+  elevator/             mock lift by reception: standalone demo ported from the Elevator Experience artifact
 ```
 
 ## What every game gets from the core
@@ -77,3 +78,12 @@ Copy `games/piano/` as a template:
 - **Question pack:** each theme has one fixed collage and every question it can answer: how many, which is NOT on the screens, and (hard) which is there the most of. Each pack is short (8 questions on easy, 10 on hard). The collage and questions are the same every game, so teams can learn it. Change the "collage layout number" in admin, or press "New collage layout", to get a new one. Question order is shuffled each game.
 - **Timing and scoring:** 20 s per question on easy and 15 s on hard, inside a 3-minute game. A wrong answer just moves on. Every 4 correct answers earns a claw credit, shown as a pop-up and on the credit display. The claw itself isn't simulated.
 - **Placeholder pictures** are emoji, defined in `games/clawquiz/themes.js`. Click a collage thumbnail in the side panel to search it full size.
+
+## Elevator (mock lift)
+
+This is a standalone page rather than a shell game. It's the Elevator Experience concept wireframe resized to the mock lift on plan SK21 (2.4 × 2.6 × 2.7 m).
+
+- **Side walls:** one 98" screen each, with panelling around it. There's no LED wall option.
+- **Effects:** both the wall crack + cable snap and the rocket out the roof are available.
+- **Settings:** everything starts at its default. Voiceover edits save under a CityWalk-only key.
+- **Library:** it uses three.js r128 from cdnjs, as the original did.

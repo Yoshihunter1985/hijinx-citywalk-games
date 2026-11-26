@@ -35,5 +35,5 @@ export const ALLOCATION = [
   { room: 'R8',  game: 'Light Floor',      type: 'P', path: 'games/lightfloor/index.html' },
   { room: 'R9',  game: 'Claw Quiz',        type: 'T', path: 'games/clawquiz/index.html' },
   { room: 'R10', game: 'Escape Room',      type: 'T', path: null },
-  { room: 'ELEV',game: 'Elevator',         type: '',  path: null },
+  { room: 'ELEV',game: 'Elevator',         type: '',  path: 'games/elevator/index.html' },
 ];
