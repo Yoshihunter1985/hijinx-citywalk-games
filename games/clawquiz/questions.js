@@ -5,7 +5,6 @@ import { THEMES, item } from './themes.js';
 
 export const TYPES = [
   { id: 'count', label: 'How many…' },
-  { id: 'which', label: 'Which wall has…' },
   { id: 'not', label: 'Which is NOT on the screens' },
   { id: 'most', label: 'Which is there the most of' },
 ];
@@ -27,7 +26,7 @@ export function makePack(themeId, cfg) {
   const names = cfg.screens, nS = names.length;
 
   const pool = shuffle(THEMES[themeId].items.map(item));
-  const nAbsent = Math.min(cfg.absent ?? 3, pool.length - 6), nUnique = Math.min(cfg.uniques ?? 3, pool.length - nAbsent - 4);
+  const nAbsent = Math.min(cfg.absent ?? 3, pool.length - 6), nUnique = Math.min(cfg.uniques ?? 0, pool.length - nAbsent - 4);
   const absent = pool.slice(0, nAbsent), uniques = pool.slice(nAbsent, nAbsent + nUnique), counted = pool.slice(nAbsent + nUnique);
   const counts = new Map();
   uniques.forEach(p => counts.set(p, 1));
@@ -46,9 +45,6 @@ export function makePack(themeId, cfg) {
     const k = counts.get(p), answers = opts(k);
     pack.push({ type: 'count', subject: p, text: `How many ${p.plural} can you find?`, answers: answers.map(n => ({ label: String(n) })), correct: answers.indexOf(k), keys: [p] });
   }
-  for (const p of uniques) {
-    pack.push({ type: 'which', subject: p, text: `Which ${nS === 2 ? 'wall' : 'screen'} has the ${p.name}?`, answers: names.map(n => ({ label: n })), correct: where.get(p), keys: [p] });
-  }
   const present = [...uniques, ...counted];
   for (const a of absent) {
     const four = shuffle([a, ...shuffle(present.slice()).slice(0, 3)]);
@@ -61,7 +57,8 @@ export function makePack(themeId, cfg) {
     pack.push({ type: 'most', text: 'Which of these is there the most of?', answers: four.map(p => ({ label: cap(p.plural), e: p.e })), correct: four.indexOf(top), keys: [top] });
     made++;
   }
-  return { theme: themeId, screens, pack, counts };
+  // fixed (seeded) order, so taking the first N of a type mix gives the same pack every game
+  return { theme: themeId, screens, pack: shuffle(pack), counts };
 }
 
 // Scatter items over a 1280 × 720 screen on a jittered grid so they don't overlap.

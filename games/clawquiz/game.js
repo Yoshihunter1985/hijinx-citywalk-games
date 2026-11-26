@@ -26,7 +26,8 @@ const SCHEMA = [
   { key: 'demoHighlight', label: 'Demo: circle the answer on the screens', type: 'bool', default: false, group: 'Screens', help: 'For walkthroughs and recordings only.' },
   // per-difficulty
   { key: 'questionTime', label: 'Time per question', type: 'number', min: 5, max: 120, step: 1, unit: 's', default: 20, preset: true, group: 'Questions' },
-  { key: 'types', label: 'Question types', type: 'multi', options: TYPES.map(t => ({ value: t.id, label: t.label })), default: ['count', 'which', 'not'], preset: true, group: 'Questions' },
+  { key: 'packSize', label: 'Questions in each theme\'s pack', type: 'number', min: 3, max: 30, step: 1, default: 8, preset: true, group: 'Questions', help: 'The same questions every game (order shuffled). About 9 fit in 3 minutes at 20 s each.' },
+  { key: 'types', label: 'Question types', type: 'multi', options: TYPES.map(t => ({ value: t.id, label: t.label })), default: ['count', 'not'], preset: true, group: 'Questions' },
   { key: 'countMin', label: 'Copies of each picture, min', type: 'number', min: 1, max: 30, step: 1, default: 2, preset: true, group: 'Questions' },
   { key: 'countMax', label: 'Copies of each picture, max', type: 'number', min: 1, max: 30, step: 1, default: 5, preset: true, group: 'Questions' },
   { key: 'pictures', label: 'Show pictures in questions and answers', type: 'bool', default: true, preset: true, group: 'Questions' },
@@ -35,8 +36,8 @@ const SCHEMA = [
   { key: 'rotate', label: 'Tilt pictures at random', type: 'bool', default: false, preset: true, group: 'Collage' },
 ];
 const PRESETS = {
-  easy: { questionTime: 20, types: ['count', 'which', 'not'], countMin: 2, countMax: 5, pictures: true, size: 120, rotate: false, collageSeed: 1 },
-  hard: { questionTime: 15, types: ['count', 'which', 'not', 'most'], countMin: 4, countMax: 9, pictures: false, size: 82, rotate: true, collageSeed: 1 },
+  easy: { packSize: 8, questionTime: 20, types: ['count', 'not'], countMin: 2, countMax: 5, pictures: true, size: 120, rotate: false, collageSeed: 1 },
+  hard: { packSize: 10, questionTime: 15, types: ['count', 'not', 'most'], countMin: 4, countMax: 9, pictures: false, size: 82, rotate: true, collageSeed: 1 },
 };
 
 class ClawQuizGame {
@@ -139,8 +140,8 @@ class ClawQuizGame {
   _nextQuestion() {
     const s = this.shell.settings, types = s.types.length ? s.types : ['count'];
     if (!this.queue.length) {
-      this.queue = this.pack.pack.filter(q => types.includes(q.type)).sort(() => Math.random() - 0.5);
-      if (!this.queue.length) this.queue = this.pack.pack.slice().sort(() => Math.random() - 0.5);
+      const fixed = this.pack.pack.filter(q => types.includes(q.type)).slice(0, Math.max(1, s.packSize));
+      this.queue = (fixed.length ? fixed : this.pack.pack.slice(0, s.packSize)).sort(() => Math.random() - 0.5);
       if (this.round && this.queue.length > 1 && this.queue[this.queue.length - 1] === this.round.q) this.queue.unshift(this.queue.pop());
     }
     return this.queue.pop();
@@ -233,7 +234,6 @@ class ClawQuizGame {
         this._emoji(ctx, p.it.e, p.x, p.y, p.size, p.rot);
         if (showKeys && r.q.keys.includes(p.it)) { ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.62, 0, Math.PI * 2); ctx.strokeStyle = ph === 'reveal' ? C.good : '#ffffff'; ctx.lineWidth = 6; ctx.setLineDash(ph === 'reveal' ? [] : [12, 8]); ctx.stroke(); ctx.setLineDash([]); }
       }
-      if ((ph === 'reveal' || this.shell.settings.demoHighlight) && r.q.type === 'which' && r.q.correct === i) { ctx.strokeStyle = C.good; ctx.lineWidth = 16; ctx.strokeRect(8, 8, W - 16, H - 16); }
     } else {
       fit(ctx, 'HIJINX HOTEL', W / 2, 360, W - 200, 90, { color: 'rgba(255,255,255,0.18)', align: 'center' });
       fit(ctx, 'CLAW QUIZ', W / 2, 430, W - 200, 46, { color: 'rgba(255,255,255,0.12)', align: 'center', weight: 600 });
@@ -362,7 +362,7 @@ class ClawQuizGame {
   adminInfo() {
     const r = this.round;
     return [['Phase', this.phase], ['Theme', this.theme ? THEMES[this.theme].label : '—'],
-      ['Question pack', this.pack ? `${this.pack.pack.length} questions · layout ${this.shell.settings.collageSeed} · ${this.pack.screens.map(x => x.length).join(' + ')} pictures` : '—'],
+      ['Question pack', this.pack ? `${Math.min(this.shell.settings.packSize, this.pack.pack.length)} questions · layout ${this.shell.settings.collageSeed} · ${this.pack.screens.map(x => x.length).join(' + ')} pictures` : '—'],
       ['Question', r ? r.q.text : '—'], ['Answer', r ? `${BTN[r.q.correct].letter}: ${r.q.answers[r.q.correct].label}` : '—'],
       ['Correct', `${this.correct || 0} of ${this.asked || 0}`], ['Credits', this.credits || 0], ['Score', fmtNum(this.score || 0)]];
   }
