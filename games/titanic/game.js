@@ -22,13 +22,13 @@ const SCHEMA = [
   { key: 'survivalBonus', label: 'Bonus for lasting until she sinks', type: 'number', min: 0, max: 5000, step: 50, default: 1000, group: 'Scoring' },
   // per difficulty
   { key: 'failAt', label: 'Game over when this much is lit', type: 'number', min: 30, max: 100, step: 5, unit: '%', default: 75, preset: true, group: 'Lights' },
-  { key: 'gapStart', label: 'Time between new lights at the start', type: 'number', min: 0.3, max: 6, step: 0.1, unit: 's', default: 2.2, preset: true, group: 'Lights' },
-  { key: 'gapEnd', label: 'Time between new lights at the end', type: 'number', min: 0.1, max: 6, step: 0.05, unit: 's', default: 0.55, preset: true, group: 'Lights' },
-  { key: 'perLight', label: 'Buttons lit each time (late game)', type: 'number', min: 1, max: 4, step: 1, default: 1, preset: true, group: 'Lights', help: 'From halfway through, each new light can bring this many at once.' },
+  { key: 'gapStart', label: 'Time between new lights at the start', type: 'number', min: 0.2, max: 6, step: 0.1, unit: 's', default: 1.6, preset: true, group: 'Lights' },
+  { key: 'gapEnd', label: 'Time between new lights at the end', type: 'number', min: 0.1, max: 6, step: 0.05, unit: 's', default: 0.4, preset: true, group: 'Lights' },
+  { key: 'perLight', label: 'Most buttons lit at once (end of game)', type: 'number', min: 1, max: 6, step: 1, default: 3, preset: true, group: 'Lights', help: 'Starts at 1 and ramps up to this many per burst as the game goes on.' },
 ];
 const PRESETS = {
-  easy: { failAt: 75, gapStart: 2.2, gapEnd: 0.55, perLight: 1 },
-  hard: { failAt: 65, gapStart: 1.6, gapEnd: 0.38, perLight: 2 },
+  easy: { failAt: 75, gapStart: 1.6, gapEnd: 0.4, perLight: 3 },
+  hard: { failAt: 65, gapStart: 1.2, gapEnd: 0.28, perLight: 4 },
 };
 
 class TitanicGame {
@@ -190,7 +190,8 @@ class TitanicGame {
       this.t += dt;
       const frac = Math.min(1, this.t / s.gameLength), gap = s.gapStart * Math.pow(s.gapEnd / s.gapStart, frac);
       this.spawnT -= dt;
-      if (this.spawnT <= 0) { this.spawnT = gap; this.lightSome(frac > 0.5 ? s.perLight : 1); }
+      // bursts grow from 1 button to perLight as the game goes on (with a bit of randomness)
+      if (this.spawnT <= 0) { this.spawnT = gap; this.lightSome(Math.max(1, Math.min(s.perLight, Math.floor(1 + (s.perLight - 1) * frac * 1.15 + Math.random() * 0.8)))); }
       const lit = this.litCount(); this.maxLit = Math.max(this.maxLit, lit);
       if (lit / this.buttons.length > s.failAt / 100) this._sink('flooded');
     } else if (this.phase === 'sinking') {
@@ -351,7 +352,7 @@ const shell = new GameShell({
     'If too many are lit at once the ship floods and it\'s game over.',
     'Keep her afloat until she sinks to win the bonus.',
   ],
-  blurbs: { easy: 'Slower lights. Game over at 75% lit.', hard: 'Faster lights, two at a time. Game over at 65% lit.' },
+  blurbs: { easy: 'Lights speed up to 3 at a time. Game over at 75% lit.', hard: 'Faster, up to 4 at a time. Game over at 65% lit.' },
   footnote: 'Click the blue buttons in the room or on the button map. The two portholes share one ocean: the iceberg passes porthole 1, then porthole 2, then the ship starts to sink.',
   game: new TitanicGame(),
 });

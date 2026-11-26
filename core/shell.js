@@ -372,19 +372,21 @@ export class GameShell {
         S.hit(x, y, bw, h, () => this.chooseDifficulty(d));
       });
     } else if (this.state === 'inroom') {
-      const cl = this.clock;
-      fit(ctx, this.modes ? `NOW PLAYING: ${this.modeLabel().toUpperCase()}` : 'GAME IN PROGRESS', 32, 130, W - 64, 34, { color: C.muted, weight: 500 });
-      fit(ctx, this.team, 32, 186, W - 300, 48, { color: C.fg });
-      fit(ctx, this.difficulty.toUpperCase(), W - 32, 186, 220, 34, { color: this.difficulty === 'hard' ? C.bad : C.good, align: 'right' });
-      fit(ctx, fmtTime(cl.left), W / 2, 318, W, 120, { color: C.accent, align: 'center' });
-      fit(ctx, cl.running ? 'LEFT TO PLAY' : 'STARTING SOON', W / 2, 352, W, 22, { color: C.muted, align: 'center', weight: 500 });
+      const cl = this.clock, free = this.roomFreeIn();
+      fit(ctx, 'GAME IN PROGRESS', 32, 128, W - 260, 34, { color: C.bad });
+      fit(ctx, `${this.team}${this.modes ? ' · ' + this.modeLabel() : ''}`, 32, 172, W - 260, 30, { color: C.fg });
+      fit(ctx, this.difficulty.toUpperCase(), W - 32, 128, 220, 30, { color: this.difficulty === 'hard' ? C.bad : C.good, align: 'right' });
+      fit(ctx, 'ROOM FREE IN', W / 2, 222, W, 26, { color: C.muted, align: 'center', weight: 500 });
+      fit(ctx, (cl.running ? '' : 'UP TO ') + fmtTime(free), W / 2, 330, W - 64, 110, { color: C.accent, align: 'center' });
+      fit(ctx, cl.running ? `${fmtTime(cl.left)} of play left` : 'game about to start', W / 2, 362, W, 22, { color: C.muted, align: 'center', weight: 500, family: MONO });
       this._drawQueue(ctx, W, H);
       S.hit(0, 0, W, H, () => this.tapCard());
     } else if (this.state === 'result') {
       const r = this.lastResult;
       fit(ctx, `${r.team} scored`, W / 2, 150, W - 64, 40, { color: C.fg, align: 'center' });
       fit(ctx, fmtNum(r.score), W / 2, 290, W - 64, 140, { color: C.accent, align: 'center' });
-      if (r.line) fit(ctx, r.line, W / 2, 340, W - 64, 24, { color: C.muted, align: 'center', weight: 500 });
+      if (r.line) fit(ctx, r.line, W / 2, 330, W - 64, 24, { color: C.muted, align: 'center', weight: 500 });
+      fit(ctx, `Room free in ${fmtTime(this.roomFreeIn())}`, W / 2, 362, W - 64, 22, { color: C.accent, align: 'center', weight: 600, family: MONO });
       this._drawQueue(ctx, W, H);
       S.hit(0, 0, W, H, () => this.tapCard());
     }
@@ -393,6 +395,14 @@ export class GameShell {
       fit(ctx, flash, W / 2, H / 2 + 12, W - 120, 30, { color: C.fg, align: 'center' });
     }
     S.commit();
+  }
+  // Seconds until the next team can go in: play time left + the end-of-game result screen.
+  // Before the clock starts (e.g. while picking a genre) it's the full game length: an upper bound.
+  roomFreeIn() {
+    const hold = this.settings.resultHold ?? 8;
+    if (this.state === 'inroom') return Math.max(0, this.clock.left) + hold;
+    if (this.state === 'result') return Math.max(0, (this._resultUntil - performance.now()) / 1000);
+    return 0;
   }
   _drawQueue(ctx, W, H) {
     ctx.fillStyle = C.rule; ctx.fillRect(32, H - 66, W - 64, 2);
