@@ -23,6 +23,17 @@ export const ROOMS = {
   ELEV:{ level: 'Ground', w: 2.4, d: 2.6, h: 2.7, door: { x: 1.2, width: 1.0 }, cabinet: null, note: 'Mock lift by reception' },
 };
 
+// Clickable room outlines on assets/venue-map.png (pixels on the 1350 × 2020 image).
+export const MAP = {
+  image: 'assets/venue-map.png', w: 1350, h: 2020,
+  rooms: {
+    R1: [52, 120, 243, 393], R2: [243, 120, 433, 393], R3: [433, 120, 623, 393], R4: [623, 120, 815, 393],
+    R5: [91, 721, 299, 995], R6: [299, 721, 506, 995], R7: [506, 721, 712, 995],
+    R8: [91, 1137, 302, 1521], R9: [302, 1137, 575, 1329], R10: [302, 1329, 575, 1521],
+    ELEV: [214, 1735, 366, 1889],
+  },
+};
+
 // Draft allocation — matches the spec doc. Physical (P) vs thinking (T).
 export const ALLOCATION = [
   { room: 'R1',  game: 'Titanic',          type: 'P', path: null },
