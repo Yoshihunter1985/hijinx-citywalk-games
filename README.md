@@ -26,6 +26,7 @@ core/
 games/
   piano/                R4 music quiz (game 1)
   lightfloor/           R8 light-up tile room: Planet Defence + Colour Call (game 2)
+  clawquiz/             R9 search-the-collage quiz that earns claw machine credits (game 3)
 ```
 
 ## What every game gets from the core
@@ -68,3 +69,11 @@ Copy `games/piano/` as a template:
 - **Colour Call:** get onto the called colour before the 3-2-1 count ends. Running out of lives ends the game early, and the time limit (default 3:00) is a hard stop. Pick a simulated player in the Players card, then click a tile to put them there.
 - **Time limits** are set per game in admin. Any game can set its own limit with a `clockLength(mode, settings)` hook.
 - **Clicking tiles when no team is playing** sends ripples across the room.
+
+## Claw Quiz (R9)
+
+- **Room:** a central block runs out from the back wall. The claw machine sits against the wall, then a walk-through tunnel gap, then the console facing the door, which has the question screen and buttons A–D. The credit display sits on the tunnel header. There's an 85" collage screen on each of the left and right walls.
+- **Theme:** players pick one with buttons A–D. The four offered are chosen in admin from Sport, Emoji, Teddies, Space, Food and Animals.
+- **Question pack:** each theme has one fixed collage and every question it can answer: how many, which wall, which is NOT on the screens, and (hard) which is there the most of. The collage is the same every game, so teams can learn it. Change the "collage layout number" in admin, or press "New collage layout", to get a new one. Question order is shuffled each game.
+- **Timing and scoring:** 20 s per question on easy and 15 s on hard, inside a 3-minute game. A wrong answer just moves on. Every 4 correct answers earns a claw credit, shown as a pop-up and on the credit display. The claw itself isn't simulated.
+- **Placeholder pictures** are emoji, defined in `games/clawquiz/themes.js`. Click a collage thumbnail in the side panel to search it full size.

@@ -89,6 +89,14 @@ a{color:var(--wire)}
 .actions button{font-size:11px;letter-spacing:.04em}
 textarea.json{width:100%;min-height:180px;background:var(--bg);color:var(--fg);border:1px solid var(--rule);border-radius:3px;font:11px var(--mono);padding:6px}
 
+/* ---------- full-size screen viewer ---------- */
+.lightbox{position:fixed;inset:0;z-index:50;background:rgba(5,9,16,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px}
+.lightbox[hidden]{display:none}
+.lightbox .lb-bar{display:flex;gap:8px;align-items:center;width:min(100%,1280px)}
+.lightbox .lb-bar b{font-family:var(--display);font-size:22px;letter-spacing:.04em;color:var(--accent)}
+.lightbox .lb-bar .spacer{flex:1}
+.lightbox canvas{width:min(100%,calc((100vh - 90px) * 16 / 9));height:auto;border:1px solid var(--rule);border-radius:6px}
+
 /* ---------- index page ---------- */
 .index{max-width:1100px;margin:0 auto;padding:28px 20px 60px}
 .index h1{font-family:var(--display);font-size:40px;margin:0;letter-spacing:.02em}

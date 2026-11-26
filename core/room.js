@@ -123,21 +123,21 @@ export class Room3D {
   }
 
   // ---------- screens: a canvas drawn by the game, shown on a wall ----------
-  addScreen({ wall, u, v, width, height, px = [960, 540], frameColor = 0x6fa8dc, label }) {
+  addScreen({ wall, u, v, width, height, px = [960, 540], frameColor = 0x6fa8dc, label, inset = 0.02 }) {
     const canvas = document.createElement('canvas');
     canvas.width = px[0]; canvas.height = px[1];
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 4;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
-    const pose = this.wallPose(wall, u, v, 0.02);
+    const pose = this.wallPose(wall, u, v, inset);
     mesh.position.copy(pose.pos); mesh.rotation.y = pose.rotY;
     const frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(width + 0.04, height + 0.04)),
       new THREE.LineBasicMaterial({ color: frameColor }));
     frame.position.copy(pose.pos); frame.rotation.y = pose.rotY;
     this.scene.add(mesh, frame);
     if (label) {
-      const lp = this.wallPose(wall, u, v + height / 2 + Math.min(0.09, height * 0.35), 0.03);
+      const lp = this.wallPose(wall, u, v + height / 2 + Math.min(0.09, height * 0.35), inset + 0.01);
       this.label(label, lp.pos, { color: '#8094ae', size: Math.min(0.07, width * 0.12), rotY: lp.rotY, flat: true });
     }
     return { canvas, ctx: canvas.getContext('2d'), texture: tex, mesh, update() { tex.needsUpdate = true; } };
